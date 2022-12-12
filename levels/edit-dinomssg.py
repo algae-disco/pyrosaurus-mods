@@ -2,63 +2,9 @@
 
 import sys, json
 
-f = open("DINOMSSG", "rb")
-
-a = f.read()
-f.close()
-
-firstStringStart = int.from_bytes(a[:2],byteorder="little")
-
-offsetArraySize = int(firstStringStart / 2) - 1
-# print(offsetArraySize)
-
-offsetArray = [firstStringStart]
-strings = []
-specialStrings = []
-
-x = 0
-i = 2
-
-while x < offsetArraySize:
-	offsetArray.append(int.from_bytes(a[i:i+2],byteorder="little"))
-	i = i + 2
-	x = x + 1
-
-# pos = offsetArray[0]
-i=0
-addoffset = 0
-special = False
-
-for t in offsetArray:
-	if a[t] == 38 and i!=41:
-		start = t + 3
-	else:
-		start = t + 2
-
-	objlen = 0
-	
-
-	while start+objlen < len(a) and a[start+objlen] != 38 and objlen < 1500:
-		if a[start+objlen] == 200:
-			objlen += 3
-			continue
-		objlen += 1
-
-	if objlen >= 1500:
-		print("Error finding string end for offset", t, a[start:start+objlen])
-	else:
-		if objlen > 0:
-			# print(i,"offset, length, start, end",t,objlen,start,start+objlen)
-			strings.append(a[start:start+objlen])
-		else:
-			print("Error loading string at offset",t,"objlen",objlen)
-	i = i + 1
-
-# print(strings[0])
-
 
 def importJson(ifile):
-	f = open("DINOMSSG.test","wb")
+	f = open("DINOMSSG","wb")
 	fj = open(ifile,"r")
 	aj = fj.read()
 	j = json.JSONDecoder().decode(aj)
@@ -121,10 +67,66 @@ def importJson(ifile):
 	fj.close()
 	f.close()
 
-def exportJson(slist, ofile):
+def exportJson(ofile):
 	j = {}
 
+	f = open("DINOMSSG", "rb")
+
+	a = f.read()
+	f.close()
+
+	firstStringStart = int.from_bytes(a[:2],byteorder="little")
+
+	offsetArraySize = int(firstStringStart / 2) - 1
+	# print(offsetArraySize)
+
+	offsetArray = [firstStringStart]
+	strings = []
+	specialStrings = []
+
+	x = 0
+	i = 2
+
+	while x < offsetArraySize:
+		offsetArray.append(int.from_bytes(a[i:i+2],byteorder="little"))
+		i = i + 2
+		x = x + 1
+
+	# pos = offsetArray[0]
+	i=0
+	addoffset = 0
+	special = False
+
+	for t in offsetArray:
+		if a[t] == 38 and i!=41:
+			start = t + 3
+		else:
+			start = t + 2
+
+		objlen = 0
+		
+
+		while start+objlen < len(a) and a[start+objlen] != 38 and objlen < 1500:
+			if a[start+objlen] == 200:
+				objlen += 3
+				continue
+			objlen += 1
+
+		if objlen >= 1500:
+			print("Error finding string end for offset", t, a[start:start+objlen])
+		else:
+			if objlen > 0:
+				# print(i,"offset, length, start, end",t,objlen,start,start+objlen)
+				strings.append(a[start:start+objlen])
+			else:
+				print("Error loading string at offset",t,"objlen",objlen)
+		i = i + 1
+
+	# print(strings[0])
+
+	slist = strings
 	i = 0
+
 	pos = firstStringStart
 
 	while i < len(slist):
@@ -165,6 +167,20 @@ def exportJson(slist, ofile):
 	f.write(json.JSONEncoder().encode(j))
 	f.close()
 
+def usage():
+	print("Usage:")
+	print("edit-dinossg < -e [file name] | -i [file name] >")
+	print("")
+	print("Utility to help modifying the DINOMSSG data file")
+	print("")
+	print("")
+	print("-e | -export [file name] - Export DINOMSSG to json file")
+	print("\t\t\tfile name is an optional argument, if not provided")
+	print("\t\t\twill default to DINOMSSG.json")
+	print("")
+	print("-i | -import [file name] - Import json file and save to DINOMSSG")
+	print("\t\t\tfile name is an optional argument, if not provided")
+	print("\t\t\twill default to DINOMSSG.json")
 
 i = 0
 
@@ -173,12 +189,16 @@ for arg in sys.argv:
 		outFile = "DINOMSSG.json"
 		if i+1 < len(sys.argv):
 			outFile = sys.argv[i+1]
-		exportJson(strings, outFile)
+		exportJson(outFile)
+		exit()
 
 	if arg == "-i" or arg == "-import":
 		inFile = "DINOMSSG.json"
 		if i+1 < len(sys.argv):
 			inFile = sys.argv[i+1]
 		importJson(inFile)
+		exit()
 
 	i = i + 1
+
+usage()
